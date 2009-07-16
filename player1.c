@@ -3,7 +3,7 @@
  * Players - Two	                                                                                        *
  * Protocol Used - UDP                                                                                          *
  * GCC Version - 4.1.1 20061011 (Red Hat 4.1.1-30)                                                              *
- * Created By :- Anuj Aggarwal (PRN No - 043)                                                                   *
+ * Created By :- Anuj Aggarwal                                                                                  *
  ***************************************************************************************************************/
 
 #include"hangman.h"
@@ -18,6 +18,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 	char pick_array[] = "abcdefghijklmnopqrstuvwxyz" ;
         char name[MAXSIZE],string[MAXSIZE],ch,*show,more;
         char used[MAXSIZE];					// array contains already used characters
+	struct query_hint queryhint ;
         struct info update;
         struct sockaddr_in fromAddr;
         socklen_t addrLen;
@@ -31,7 +32,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
         addrLen = sizeof(fromAddr);
 
 #ifdef CURSES
-	mvwprintw(board,5,20,"Waiting for a player...");
+	mvwprintw(board,5,X_COL,"Waiting for a player...");
 	wrefresh(board);
 #else
         printf("\n Waiting for a player...\n");
@@ -44,7 +45,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 		exit(1);
 	}
 #ifdef CURSES
-	mvwprintw(board,7,20,"%s : wants to play the game",name);
+	mvwprintw(board,7,X_COL,"%s : wants to play the game",name);
 	wrefresh(board);
 #else
         printf("%s : wants to play the game\n",name);
@@ -59,44 +60,48 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 
         /* input the string to be guessed and send its length to Player 2*/
 #ifdef CURSES
-	mvwprintw(board,8,20,"Enter the string for %s :",name);
+	mvwprintw(board,9,X_COL,"Enter the string for %s : ",name);
 	wrefresh(board);
 	flushinp();
-//	refresh();
+//	mvwgetnstr(board,8,X_COL+24+sizeof(name),string,MAXSIZE);
+	wgetnstr(board,string,MAXSIZE);
+
+	mvwprintw(board,11,X_COL,"Enter the catageory or hint string : ");
+	wrefresh(board);
+	wgetnstr(board,queryhint.hint_str,MAXSIZE);
 #else
         printf("\n Enter the string for %s :\n",name);
+       	scanf("%s",string);
+	printf("\nEnter the catageory or hint string : ");
+       	scanf("%s",queryhint.hint_str);
 #endif
-	do
-	{
-		mvwgetnstr(board,9,20,string,MAXSIZE);
-//        	scanf("%s",string);
-	}while(0);
 
-        string_len = strlen(string);
-	if((sendto(sockfd,&string_len,4,0,(struct sockaddr *)sendAddr, *sendAddr_len ))<0)
+        queryhint.string_len = strlen(string);
+
+	if((sendto(sockfd,&queryhint,sizeof(queryhint),0,(struct sockaddr *)sendAddr, *sendAddr_len ))<0)
         { 
 		perror(" SENDTO() failed "); 
 		exit(2);
 	}
 
         /* initialize the show[] string*/
-        show=(char *)malloc(string_len);
-        for(i=0;i<string_len;i++)
+        show=(char *)malloc(queryhint.string_len);
+        for(i=0;i<queryhint.string_len;i++)
 	{
                 show[i]='-';
 	}
 	show[i] = '\0' ;
 
 #ifdef CURSES
-	mvwprintw(board,10,20,"Now Wait and Watch...");
+	mvwprintw(board,13,X_COL,"Now Wait and Watch...");
 //	wmove(board,11,20);
 	wattron(board,A_BOLD);
-	mvwprintw(board,11,20,"%s",pick_array);
+	mvwprintw(board,15,X_COL,"%s",pick_array);
 	wattroff(board,A_BOLD);
 	wrefresh(board);
-	mvwprintw(board,12,20,"%s",show);
+	mvwprintw(board,17,X_COL,"%s",show);
 	wrefresh(board);
-	mvwprintw(board,12,42,"Lives Remaining - %d",update.lives);
+	mvwprintw(board,17,X_COL+22,"Lives Remaining - %d",update.lives);
 	wrefresh(board);
 #else
         printf("\n\n\t Now Wait and Watch... \n\n");
@@ -136,7 +141,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 			{ 
                                 update.lives--;
 			}
-                        if(matched==string_len)		    // if all characters matched means player2 win
+                        if(matched==queryhint.string_len)		    // if all characters matched means player2 win
 			{
                                 update.win_flag=1;		
 			}
@@ -150,11 +155,11 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 #ifdef CURSES
 		pick_array[ch-97]=' ';
 		wattron(board,A_BOLD);
-		mvwprintw(board,11,20,"%s",pick_array);
+		mvwprintw(board,15,X_COL,"%s",pick_array);
 		wattroff(board,A_BOLD);
-		mvwprintw(board,12,20,"%s",show);
+		mvwprintw(board,17,X_COL,"%s",show);
 		wrefresh(board);
-		mvwprintw(board,12,42,"Lives Remaining - %d",update.lives);
+		mvwprintw(board,17,X_COL+22,"Lives Remaining - %d",update.lives);
 		wrefresh(board);
 #else
 		pick_array[ch-97]=' ';
@@ -179,7 +184,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 			exit(4);
 		}
 #ifdef CURSES 
-		mvwprintw(board,row-8,20,"CONGRATULATIONS : YOU WIN");
+		mvwprintw(board,row-8,X_COL,"CONGRATULATIONS : YOU WIN");
 		wrefresh(board);
 #else
         	printf("\n\n CONGRATULATIONS : YOU WIN\n");
@@ -189,7 +194,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
         else
 	{
 #ifdef CURSES
-		mvwprintw(board,row-6,20,"Better Luck Next Time...");
+		mvwprintw(board,row-6,X_COL,"Better Luck Next Time...");
 		wrefresh(board);
 #else
         	printf("\n Better Luck Next Time...\n");
@@ -197,7 +202,7 @@ char play1_game(int sockfd,struct sockaddr_in *sendAddr,socklen_t *sendAddr_len)
 	}
 
 #ifdef CURSES
-	mvwprintw(board,row-5,20,"Waiting for %s's response...",name);
+	mvwprintw(board,row-5,X_COL,"Waiting for %s's response...",name);
 	wrefresh(board);
 #else
 	printf("\n\n Waiting for %s's response...\n\n",name);

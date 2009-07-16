@@ -27,6 +27,14 @@
 
 #define MAXSIZE 20
 
+#define X_COL   30
+
+#define P1_PORT  11703 		//atoi(argv[2])
+
+#define P2_PORT  11800		//atoi(argv[3])
+
+//char greet_msg[]="!!! WELCOME TO HANGMAN !!!" ;
+
 char play1_game(int sockfd,struct sockaddr_in *player2,socklen_t *player2_len);
 char play2_game(int sockfd,struct sockaddr_in *player2,socklen_t *player2_len);
 int check_char(char ch,char string[],int pos[]);
@@ -39,3 +47,8 @@ struct info{
         int pos[20];
 };
 
+struct query_hint
+{
+	int string_len;
+	char hint_str[MAXSIZE];
+};
